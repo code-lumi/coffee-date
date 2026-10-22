@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A Cup of Love for You</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Playfair+Display:ital,wght@0,500;0,700;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            espresso: '#2C1810',
+            roast: '#3D2314',
+            warmMocha: '#6F4E37',
+            latte: '#C8A2C8',
+            cream: '#FFF8F0',
+            warmCream: '#FDF6ED',
+            roseGold: '#E8A598',
+            blush: '#F4C2C2',
+            softRose: '#E07A5F'
+          },
+          fontFamily: {
+            serif: ['"Playfair Display"', 'serif'],
+            script: ['"Dancing Script"', 'cursive'],
+            sans: ['"Poppins"', 'sans-serif'],
+          },
+          animation: {
+            'float-slow': 'float 6s ease-in-out infinite',
+            'pulse-soft': 'pulseSoft 3s ease-in-out infinite',
+            'steam': 'steamRise 3s ease-out infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
+              '50%': { transform: 'translateY(-10px) rotate(2deg)' },
+            },
+            pulseSoft: {
+              '0%, 100%': { opacity: '0.8', transform: 'scale(1)' },
+              '50%': { opacity: '1', transform: 'scale(1.03)' },
+            },
+            steamRise: {
+              '0%': { transform: 'translateY(0) scaleX(1)', opacity: '0' },
+              '50%': { opacity: '0.6' },
+              '100%': { transform: 'translateY(-40px) scaleX(1.5)', opacity: '0' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background: radial-gradient(circle at center, #3D2314 0%, #201009 100%);
+      font-family: 'Poppins', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Ambient particles container */
+    #particle-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .glass-card {
+      background: rgba(44, 24, 16, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(232, 165, 152, 0.2);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    }
+
+    .glass-modal {
+      background: rgba(25, 12, 8, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(232, 165, 152, 0.3);
+    }
+
+    /* Custom glow effects */
+    .glow-rose {
+      box-shadow: 0 0 25px rgba(232, 165, 152, 0.35);
+    }
+
+    .glow-warm {
+      box-shadow: 0 0 35px rgba(212, 143, 56, 0.25);
+    }
+
+    /* Steam path styling */
+    .steam-line {
+      stroke-dasharray: 100;
+      stroke-dashoffset: 100;
+      animation: dash 4s linear infinite;
+    }
+
+    @keyframes dash {
+      0% { stroke-dashoffset: 100; opacity: 0; }
+      50% { opacity: 0.5; }
+      100% { stroke-dashoffset: 0; opacity: 0; }
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #2C1810;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #6F4E37;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="text-warmCream min-h-screen flex flex-col justify-between relative selection:bg-roseGold selection:text-espresso">
+
+  <!-- Floating Ambient Particles Canvas -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- Top Navigation / Controls Bar -->
+  <header class="relative z-20 w-full px-6 py-4 flex justify-between items-center max-w-5xl mx-auto">
+    <div class="flex items-center gap-2">
+      <div class="w-10 h-10 rounded-full bg-roseGold/20 border border-roseGold/40 flex items-center justify-center text-roseGold shadow-inner">
+        <i data-lucide="coffee" class="w-5 h-5"></i>
+      </div>
+      <span class="font-script text-2xl md:text-3xl font-bold tracking-wide text-roseGold">Café de l'Amour</span>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <!-- Audio Toggle Button -->
+      <button id="sound-btn" class="p-2.5 rounded-full bg-roast/80 hover:bg-warmMocha/50 border border-roseGold/30 text-roseGold transition-all duration-300 flex items-center gap-2 text-xs font-medium px-4 shadow-md" title="Toggle Cozy Ambience & Sounds">
+        <i id="sound-icon" data-lucide="volume-x" class="w-4 h-4"></i>
+        <span id="sound-text" class="hidden sm:inline">Cozy Audio</span>
+      </button>
+
+      <!-- Personalize Name Button -->
+      <button id="customize-btn" class="p-2.5 rounded-full bg-roseGold/20 hover:bg-roseGold/30 border border-roseGold/50 text-warmCream transition-all duration-300 flex items-center gap-2 text-xs font-medium px-4 shadow-md glow-rose">
+        <i data-lucide="heart" class="w-4 h-4 text-roseGold fill-roseGold/30"></i>
+        <span id="nav-her-name" class="font-medium">For Special One</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Hero Interactive Section -->
+  <main class="relative z-10 my-auto px-4 py-6 max-w-4xl mx-auto w-full flex flex-col items-center">
+    
+    <!-- Title & Greeting Header -->
+    <div class="text-center mb-6 max-w-xl">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-warmMocha/30 border border-roseGold/20 text-xs text-roseGold font-sans mb-3 tracking-wider uppercase">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+        <span>Brewed Specially With Love</span>
+      </div>
+      <h1 class="text-3xl md:text-5xl font-serif font-bold text-warmCream leading-tight mb-2">
+        A Warm Cup For <span id="display-name" class="font-script text-roseGold text-4xl md:text-6xl underline decoration-roseGold/40 underline-offset-8">My Beloved</span>
+      </h1>
+      <p class="text-xs md:text-sm text-warmCream/70 font-light max-w-md mx-auto">
+        Press the button below to start brewing a fresh, cozy cup crafted just for your heart.
+      </p>
+    </div>
+
+    <!-- Main Interactive Coffee Canvas Container -->
+    <div class="glass-card rounded-3xl p-6 md:p-8 w-full max-w-md flex flex-col items-center relative overflow-hidden my-2">
+      
+      <!-- Subtle Decorative Background Glow -->
+      <div class="absolute -top-20 -left-20 w-40 h-40 bg-roseGold/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-20 -right-20 w-40 h-40 bg-warmMocha/20 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Coffee Canvas Scene -->
+      <div class="relative w-full aspect-square max-w-[280px] sm:max-w-[320px] flex items-center justify-center">
+        
+        <!-- Coffee Machine / Pour Interactive View (SVG + CSS) -->
+        <div id="coffee-scene" class="w-full h-full relative flex items-center justify-center">
+          
+          <!-- Steam Overlay Particles -->
+          <div id="steam-container" class="absolute top-4 w-32 h-28 pointer-events-none opacity-0 transition-opacity duration-1000 flex justify-center items-end">
+            <!-- Animated SVG Hearts Steam -->
+            <svg class="w-full h-full overflow-visible" viewBox="0 0 100 100">
+              <path class="steam-line" d="M 30 80 Q 20 50 35 20 T 25 0" stroke="rgba(255, 248, 240, 0.4)" stroke-width="3" fill="none" stroke-linecap="round" />
+              <path class="steam-line" d="M 50 85 Q 65 55 50 25 T 60 0" stroke="rgba(232, 165, 152, 0.5)" stroke-width="4" fill="none" stroke-linecap="round" style="animation-delay: 1s;" />
+              <path class="steam-line" d="M 70 80 Q 80 50 65 20 T 75 0" stroke="rgba(255, 248, 240, 0.4)" stroke-width="3" fill="none" stroke-linecap="round" style="animation-delay: 2s;" />
+            </svg>
+          </div>
+
+          <!-- Coffee Stream / Kettle Pour Element -->
+          <div id="pour-stream" class="absolute top-0 w-3 bg-gradient-to-b from-[#4A2810] via-[#381E0B] to-[#251306] rounded-full transition-all duration-300 opacity-0 z-20 shadow-lg" style="height: 0px; top: 10px;"></div>
+
+          <!-- The Main Coffee Cup Rendered with Canvas for Liquid Fill -->
+          <div class="relative z-10 w-full h-full flex items-center justify-center cursor-pointer" id="cup-container" title="Click to interact with your cup!">
+            <canvas id="coffee-canvas" width="320" height="320" class="w-full h-full drop-shadow-2xl"></canvas>
+          </div>
+
+          <!-- Floating Interaction Hint Tag -->
+          <div id="cup-hint" class="absolute bottom-2 bg-roast/90 text-roseGold border border-roseGold/30 px-3 py-1 rounded-full text-xs font-sans tracking-wide shadow-lg opacity-0 transition-all duration-500 pointer-events-none flex items-center gap-1.5">
+            <i data-lucide="sparkles" class="w-3 h-3"></i>
+            <span>Tap cup for a surprise!</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Action Button Controls -->
+      <div class="w-full flex flex-col gap-3 mt-4 z-20">
+        <button id="brew-btn" class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-roseGold via-softRose to-warmMocha text-espresso font-semibold font-sans text-sm tracking-wide shadow-lg hover:brightness-110 active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-2 group">
+          <i data-lucide="coffee" class="w-4 h-4 text-espresso group-hover:rotate-12 transition-transform duration-300"></i>
+          <span id="brew-btn-text">Pour Fresh Coffee</span>
+        </button>
+
+        <button id="secret-note-btn" class="w-full py-2.5 px-4 rounded-2xl bg-warmMocha/20 border border-roseGold/30 text-roseGold hover:bg-warmMocha/40 font-sans text-xs tracking-wide transition-all duration-300 flex items-center justify-center gap-2 hidden">
+          <i data-lucide="mail-heart" class="w-4 h-4 text-roseGold"></i>
+          <span>Open Secret Note From Me</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Dynamic Romantic Coffee Quotes Section -->
+    <div class="glass-card rounded-2xl p-6 md:p-8 w-full max-w-xl text-center my-4 relative border border-roseGold/20 shadow-2xl">
+      <i data-lucide="quote" class="w-8 h-8 text-roseGold/20 absolute top-4 left-4"></i>
+      <i data-lucide="quote" class="w-8 h-8 text-roseGold/20 absolute bottom-4 right-4 rotate-180"></i>
+
+      <div class="min-h-[90px] flex flex-col justify-center items-center px-4">
+        <p id="quote-text" class="font-serif text-lg md:text-xl text-warmCream italic leading-relaxed transition-opacity duration-500 opacity-100">
+          "Some people just have a way of making your day better without even trying."
+        </p>
+        <p id="quote-author" class="font-script text-roseGold text-lg md:text-xl mt-2 transition-opacity duration-500 opacity-100">
+          — Brewed with affection
+        </p>
+      </div>
+
+      <div class="mt-4 pt-4 border-t border-roseGold/10 flex justify-center">
+        <button id="next-quote-btn" class="px-5 py-2 rounded-full bg-roast/60 hover:bg-warmMocha/50 border border-roseGold/30 text-roseGold font-sans text-xs flex items-center gap-2 transition-all duration-300 hover:scale-105 active:scale-95 shadow-md">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-roseGold"></i>
+          <span>Another Cup of Quotes</span>
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="relative z-20 py-4 text-center text-xs text-warmCream/50 font-sans">
+    <p class="flex items-center justify-center gap-1">
+      Made with <i data-lucide="heart" class="w-3.5 h-3.5 text-roseGold fill-roseGold inline"></i> & lots of espresso for <span id="footer-her-name" class="text-roseGold font-medium">Her</span>
+    </p>
+  </footer>
+
+  <!-- MODAL 1: Personalize Name & Custom Message -->
+  <div id="customize-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-modal rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-roseGold/30 transform scale-95 transition-transform duration-300" id="customize-modal-content">
+      <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center gap-2">
+          <i data-lucide="heart-handshake" class="w-5 h-5 text-roseGold"></i>
+          <h3 class="font-serif text-xl font-bold text-warmCream">Personalize For Her</h3>
+        </div>
+        <button id="close-customize-modal" class="text-warmCream/60 hover:text-warmCream p-1 rounded-full hover:bg-warmMocha/30 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 font-sans text-xs md:text-sm">
+        <div>
+          <label class="block text-roseGold font-medium mb-1">Her Name / Nickname</label>
+          <input type="text" id="input-her-name" placeholder="e.g. Maya, Sunshine, Angel" class="w-full px-4 py-3 rounded-xl bg-roast/80 border border-roseGold/30 text-warmCream focus:outline-none focus:border-roseGold focus:ring-1 focus:ring-roseGold transition-all">
+        </div>
+
+        <div>
+          <label class="block text-roseGold font-medium mb-1">Your Special Secret Note For Her</label>
+          <textarea id="input-secret-note" rows="3" placeholder="Write a sweet message that reveals when her coffee is served..." class="w-full px-4 py-3 rounded-xl bg-roast/80 border border-roseGold/30 text-warmCream focus:outline-none focus:border-roseGold focus:ring-1 focus:ring-roseGold transition-all resize-none"></textarea>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-3">
+        <button id="save-customize-btn" class="w-full py-3 rounded-xl bg-gradient-to-r from-roseGold to-softRose text-espresso font-semibold text-sm hover:brightness-110 transition-all shadow-md">
+          Save & Make It Magical
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Secret Note / Heart Card Pop-up -->
+  <div id="note-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="glass-modal rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl border border-roseGold/40 text-center relative overflow-hidden transform scale-95 transition-transform duration-300" id="note-modal-content">
+      
+      <!-- Decorative Hearts SVG Background -->
+      <div class="absolute -top-10 -right-10 w-32 h-32 text-roseGold/10 pointer-events-none">
+        <i data-lucide="heart" class="w-full h-full fill-current"></i>
+      </div>
+
+      <div class="w-12 h-12 rounded-full bg-roseGold/20 border border-roseGold/40 mx-auto flex items-center justify-center text-roseGold mb-4 glow-rose">
+        <i data-lucide="mail-open" class="w-6 h-6"></i>
+      </div>
+
+      <h3 class="font-script text-3xl md:text-4xl text-roseGold font-bold mb-2">A Secret Note For You</h3>
+      <p class="font-serif text-sm text-warmCream/80 italic mb-6">From someone who thinks about you with every cup</p>
+
+      <div class="bg-roast/60 border border-roseGold/20 rounded-2xl p-6 mb-6 text-left relative">
+        <p id="secret-modal-text" class="font-serif text-base md:text-lg text-warmCream leading-relaxed italic">
+         "Our chats are always a bright spot in my day. Can't wait until we finally get to grab that coffee in person!"
+        </p>
+        <p id="secret-modal-sign" class="text-right font-script text-xl text-roseGold mt-4">
+          — Forever Yours ❤️
+        </p>
+      </div>
+
+      <button id="close-note-modal" class="py-3 px-8 rounded-full bg-roseGold text-espresso font-semibold text-sm hover:bg-blush transition-all shadow-lg hover:scale-105 active:scale-95">
+        Keep Close to Heart
+      </button>
+    </div>
+  </div>
+
+
+  <!-- Application Main Logic JS -->
+  <script>
+    // --- APP STATE & CONFIG ---
+    const state = {
+      herName: 'Sid',
+      secretNote: "Talking with you is like having that favorite cup of coffee that instantly brightens up the day.",
+      fillLevel: 0, // 0 to 1
+      isBrewing: false,
+      audioEnabled: false,
+      currentQuoteIdx: 0,
+      latteArtProgress: 0, // 0 to 1
+      steamActive: false
+    };
+
+    // Coffee romantic quotes collection
+   const coffeeQuotes = [
+  { quote: "Like a warm cup of coffee on a crisp morning, great chats with you bring instant comfort and good vibes.", author: "— Your Daily Brew" },
+  { quote: "Talking with you is like having that favorite cup of coffee that instantly brightens up the day.", author: "— Morning Boost" },
+  { quote: "Our conversation flows even better than a fresh batch of morning espresso.", author: "— Good Vibes & Coffee" },
+  { quote: "I like our chats a latte! Looking forward to finally sharing a cup in person.", author: "— Espresso Yourself" },
+  { quote: "If your energy were a coffee, it’d be the perfect blend—warm, uplifting, and cheerful.", author: "— Bright Energy" },
+  { quote: "Great conversations with cool people make every day feel like a cozy cafe corner.", author: "— Cozy Mind" },
+  { quote: "A good chat with you boosts my mood faster than a hot double shot on a busy day.", author: "— Pure Energy" }
+];
+
+
+    // Web Audio Synthesizer Context
+    let audioCtx = null;
+    let pourNoiseNode = null;
+    let pourGainNode = null;
+    let ambientGainNode = null;
+
+    // Canvas References
+    const canvas = document.getElementById('coffee-canvas');
+    const ctx = canvas.getContext('2d');
+    const particleCanvas = document.getElementById('particle-canvas');
+    const pCtx = particleCanvas.getContext('2d');
+
+    // DOM Elements
+    const displayHerName = document.getElementById('display-name');
+    const navHerName = document.getElementById('nav-her-name');
+    const footerHerName = document.getElementById('footer-her-name');
+    const quoteText = document.getElementById('quote-text');
+    const quoteAuthor = document.getElementById('quote-author');
+    const brewBtn = document.getElementById('brew-btn');
+    const brewBtnText = document.getElementById('brew-btn-text');
+    const pourStream = document.getElementById('pour-stream');
+    const steamContainer = document.getElementById('steam-container');
+    const cupHint = document.getElementById('cup-hint');
+    const secretNoteBtn = document.getElementById('secret-note-btn');
+
+    // Modals
+    const customizeModal = document.getElementById('customize-modal');
+    const customizeModalContent = document.getElementById('customize-modal-content');
+    const noteModal = document.getElementById('note-modal');
+    const noteModalContent = document.getElementById('note-modal-content');
+    const inputHerName = document.getElementById('input-her-name');
+    const inputSecretNote = document.getElementById('input-secret-note');
+    const secretModalText = document.getElementById('secret-modal-text');
+
+    // --- INITIALIZATION ---
+    window.onload = () => {
+      lucide.createIcons();
+      resizeParticleCanvas();
+      initParticles();
+      animateParticles();
+      drawCoffeeCup();
+
+      // Keyboard & Resize listeners
+      window.addEventListener('resize', () => {
+        resizeParticleCanvas();
+        drawCoffeeCup();
+      });
+
+      setupEventListeners();
+    };
+
+    // --- CANVAS PARTICLE BACKGROUND ---
+    let particles = [];
+    function resizeParticleCanvas() {
+      particleCanvas.width = window.innerWidth;
+      particleCanvas.height = window.innerHeight;
+    }
+
+    function initParticles() {
+      particles = [];
+      const count = Math.min(Math.floor(window.innerWidth / 25), 45);
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: Math.random() * particleCanvas.width,
+          y: Math.random() * particleCanvas.height,
+          size: Math.random() * 3 + 1,
+          speedY: - (Math.random() * 0.4 + 0.1),
+          speedX: (Math.random() - 0.5) * 0.3,
+          opacity: Math.random() * 0.6 + 0.2,
+          isHeart: Math.random() > 0.65
+        });
+      }
+    }
+
+    function animateParticles() {
+      pCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+
+      particles.forEach((p) => {
+        p.y += p.speedY;
+        p.x += p.speedX;
+
+        if (p.y < -20) {
+          p.y = particleCanvas.height + 10;
+          p.x = Math.random() * particleCanvas.width;
+        }
+
+        pCtx.save();
+        pCtx.globalAlpha = p.opacity;
+
+        if (p.isHeart) {
+          // Draw subtle floating heart particle
+          pCtx.fillStyle = '#E8A598';
+          pCtx.font = `${p.size * 3 + 8}px serif`;
+          pCtx.fillText('♥', p.x, p.y);
+        } else {
+          // Draw soft warm bokeh particle
+          pCtx.fillStyle = '#C8A2C8';
+          pCtx.beginPath();
+          pCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          pCtx.fill();
+        }
+
+        pCtx.restore();
+      });
+
+      requestAnimationFrame(animateParticles);
+    }
+
+    // --- COFFEE CUP & FILL ANIMATION (CANVAS) ---
+    function drawCoffeeCup() {
+      const w = canvas.width;
+      const h = canvas.height;
+      const cx = w / 2;
+      const cy = h / 2 + 10;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // 1. Saucer Shadow & Plate
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 85, 115, 24, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      ctx.filter = 'blur(8px)';
+      ctx.fill();
+      ctx.filter = 'none';
+      ctx.restore();
+
+      // Saucer Outer
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 80, 110, 22, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#E8A598';
+      ctx.fill();
+      ctx.strokeStyle = '#F4C2C2';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Saucer Inner Rim
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 80, 85, 16, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#3D2314';
+      ctx.fill();
+
+      // 2. Cup Handle (Behind Cup)
+      ctx.beginPath();
+      ctx.arc(cx + 70, cy + 10, 32, -Math.PI * 0.4, Math.PI * 0.6);
+      ctx.strokeStyle = '#FFF8F0';
+      ctx.lineWidth = 14;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.strokeStyle = '#E8A598';
+      ctx.lineWidth = 10;
+      ctx.stroke();
+
+      // 3. Cup Body Outer Base
+      const topR = 80;
+      const bottomR = 55;
+      const cupH = 100;
+      const topY = cy - cupH / 2;
+      const bottomY = cy + cupH / 2;
+
+      // Draw Cup Base Gradient
+      const cupGrad = ctx.createLinearGradient(cx - topR, topY, cx + topR, topY);
+      cupGrad.addColorStop(0, '#FFFFFF');
+      cupGrad.addColorStop(0.3, '#FFF8F0');
+      cupGrad.addColorStop(0.7, '#FDF6ED');
+      cupGrad.addColorStop(1, '#E8A598');
+
+      ctx.beginPath();
+      ctx.moveTo(cx - topR, topY);
+      ctx.bezierCurveTo(cx - topR, bottomY, cx - bottomR, bottomY + 15, cx - bottomR, bottomY + 15);
+      ctx.lineTo(cx + bottomR, bottomY + 15);
+      ctx.bezierCurveTo(cx + bottomR, bottomY + 15, cx + topR, bottomY, cx + topR, topY);
+      ctx.closePath();
+      ctx.fillStyle = cupGrad;
+      ctx.fill();
+      ctx.strokeStyle = '#E8A598';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 4. Cup Inner Cavity Dark Background
+      ctx.beginPath();
+      ctx.ellipse(cx, topY, topR, 20, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#1A0C06';
+      ctx.fill();
+
+      // 5. Liquid Fill Rendering (Animated Level)
+      if (state.fillLevel > 0) {
+        const currentLiquidY = bottomY - (cupH * 0.75 * state.fillLevel);
+        const currentRadius = bottomR + (topR - bottomR) * (state.fillLevel * 0.8);
+        const innerEllipseH = 16 * (0.6 + state.fillLevel * 0.4);
+
+        // Liquid Body Clip
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(cx - topR, topY);
+        ctx.bezierCurveTo(cx - topR, bottomY, cx - bottomR, bottomY + 12, cx - bottomR, bottomY + 12);
+        ctx.lineTo(cx + bottomR, bottomY + 12);
+        ctx.bezierCurveTo(cx + bottomR, bottomY + 12, cx + topR, bottomY, cx + topR, topY);
+        ctx.closePath();
+        ctx.clip();
+
+        // Liquid Dark Coffee Base
+        const coffeeGrad = ctx.createRadialGradient(cx, currentLiquidY, 5, cx, currentLiquidY, currentRadius);
+        coffeeGrad.addColorStop(0, '#6F4E37');
+        coffeeGrad.addColorStop(0.7, '#3D2314');
+        coffeeGrad.addColorStop(1, '#251306');
+
+        ctx.beginPath();
+        ctx.rect(cx - topR - 10, currentLiquidY, (topR + 10) * 2, bottomY - currentLiquidY + 20);
+        ctx.fillStyle = coffeeGrad;
+        ctx.fill();
+
+        // Top Surface Oval Liquid
+        ctx.beginPath();
+        ctx.ellipse(cx, currentLiquidY, currentRadius, innerEllipseH, 0, 0, Math.PI * 2);
+        ctx.fillStyle = coffeeGrad;
+        ctx.fill();
+        ctx.strokeStyle = '#8B5A2B';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Cream Crema Ring
+        ctx.beginPath();
+        ctx.ellipse(cx, currentLiquidY, currentRadius - 2, innerEllipseH - 2, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(210, 150, 90, 0.6)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // 6. Latte Art Heart Creation (Gracefully forming when fillLevel is high)
+        if (state.latteArtProgress > 0) {
+          ctx.save();
+          ctx.translate(cx, currentLiquidY);
+          ctx.scale(state.latteArtProgress, state.latteArtProgress * 0.6); // Perspective match
+
+          // Soft Latte Cream Heart Path
+          ctx.beginPath();
+          ctx.moveTo(0, -5);
+          ctx.bezierCurveTo(-25, -35, -50, 5, 0, 35);
+          ctx.bezierCurveTo(50, 5, 25, -35, 0, -5);
+          ctx.closePath();
+
+          const cremaGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, 30);
+          cremaGrad.addColorStop(0, '#FFF8F0');
+          cremaGrad.addColorStop(0.7, '#F4C2C2');
+          cremaGrad.addColorStop(1, 'rgba(200, 140, 90, 0.2)');
+
+          ctx.fillStyle = cremaGrad;
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+          ctx.shadowBlur = 4;
+          ctx.fill();
+
+          // Subtle Heart Ring Accent
+          ctx.strokeStyle = 'rgba(255, 248, 240, 0.8)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          ctx.restore();
+        }
+
+        ctx.restore();
+      }
+
+      // 7. Cup Outer Top Rim Highlight & Shine
+      ctx.beginPath();
+      ctx.ellipse(cx, topY, topR, 20, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Front Cup Gloss/Reflection
+      ctx.beginPath();
+      ctx.arc(cx - topR + 15, cy, 25, Math.PI * 0.7, Math.PI * 1.3);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    }
+
+    // --- BREWING ANIMATION SEQUENCE ---
+    function startBrewing() {
+      if (state.isBrewing) return;
+
+      state.isBrewing = true;
+      state.fillLevel = 0;
+      state.latteArtProgress = 0;
+      brewBtn.disabled = true;
+      brewBtnText.innerText = "Pouring Love...";
+      cupHint.classList.add('opacity-0');
+
+      // Play Sound Effect
+      playPourSound(true);
+
+      // Show Pour Stream
+      pourStream.style.opacity = "1";
+      pourStream.style.height = "160px";
+
+      const startTime = performance.now();
+      const duration = 3500; // 3.5 seconds pour duration
+
+      function step(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Fill coffee gradually
+        state.fillLevel = progress;
+
+        // Start Latte Art near end of fill
+        if (progress > 0.6) {
+          state.latteArtProgress = (progress - 0.6) / 0.4;
+        }
+
+        drawCoffeeCup();
+
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else {
+          // Finish Brewing
+          finishBrewing();
+        }
+      }
+
+      requestAnimationFrame(step);
+    }
+
+    function finishBrewing() {
+      state.isBrewing = false;
+      brewBtn.disabled = false;
+      brewBtnText.innerText = "Pour Another Fresh Cup";
+
+      // Retract Stream
+      pourStream.style.height = "0px";
+      pourStream.style.opacity = "0";
+
+      // Stop Pour Sound
+      playPourSound(false);
+
+      // Trigger Steam & Confetti
+      steamContainer.classList.remove('opacity-0');
+      cupHint.classList.remove('opacity-0');
+      secretNoteBtn.classList.remove('hidden');
+
+      // Heart Confetti Explosion
+      try {
+        confetti({
+          particleCount: 40,
+          spread: 60,
+          origin: { y: 0.65 },
+          colors: ['#E8A598', '#F4C2C2', '#FFF8F0', '#6F4E37'],
+          shapes: ['circle']
+        });
+      } catch (e) { console.log(e); }
+
+      // Auto reveal secret note popup on first full pour
+      setTimeout(() => {
+        openNoteModal();
+      }, 800);
+    }
+
+    // --- AUDIO SYNTHESIZER (WEB AUDIO API) ---
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function toggleSound() {
+      initAudio();
+      state.audioEnabled = !state.audioEnabled;
+
+      const icon = document.getElementById('sound-icon');
+      const text = document.getElementById('sound-text');
+      const soundBtn = document.getElementById('sound-btn');
+
+      if (state.audioEnabled) {
+        icon.setAttribute('data-lucide', 'volume-2');
+        text.innerText = "Sound On";
+        soundBtn.classList.add('bg-roseGold/20', 'border-roseGold');
+        startCozyAmbience();
+      } else {
+        icon.setAttribute('data-lucide', 'volume-x');
+        text.innerText = "Cozy Audio";
+        soundBtn.classList.remove('bg-roseGold/20', 'border-roseGold');
+        stopCozyAmbience();
+      }
+      lucide.createIcons();
+    }
+
+    function startCozyAmbience() {
+      if (!audioCtx || !state.audioEnabled) return;
+
+      // Generate soft warm brown noise for cozy coffee shop background
+      const bufferSize = audioCtx.sampleRate * 2;
+      const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      let lastOut = 0.0;
+
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        output[i] = (lastOut + (0.02 * white)) / 1.02; // Warm brown noise
+        lastOut = output[i];
+      }
+
+      const whiteNoise = audioCtx.createBufferSource();
+      whiteNoise.buffer = noiseBuffer;
+      whiteNoise.loop = true;
+
+      // Low pass filter to keep it super cozy and soft
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(350, audioCtx.currentTime);
+
+      ambientGainNode = audioCtx.createGain();
+      ambientGainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+
+      whiteNoise.connect(filter);
+      filter.connect(ambientGainNode);
+      ambientGainNode.connect(audioCtx.destination);
+
+      whiteNoise.start();
+    }
+
+    function stopCozyAmbience() {
+      if (ambientGainNode) {
+        ambientGainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+      }
+    }
+
+    function playPourSound(play) {
+      if (!audioCtx || !state.audioEnabled) return;
+
+      if (play) {
+        const bufferSize = audioCtx.sampleRate * 2;
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = Math.random() * 2 - 1;
+        }
+
+        pourNoiseNode = audioCtx.createBufferSource();
+        pourNoiseNode.buffer = noiseBuffer;
+        pourNoiseNode.loop = true;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(800, audioCtx.currentTime);
+        filter.Q.setValueAtTime(3, audioCtx.currentTime);
+
+        pourGainNode = audioCtx.createGain();
+        pourGainNode.gain.setValueAtTime(0.12, audioCtx.currentTime);
+
+        pourNoiseNode.connect(filter);
+        filter.connect(pourGainNode);
+        pourGainNode.connect(audioCtx.destination);
+
+        pourNoiseNode.start();
+      } else if (pourGainNode) {
+        pourGainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3);
+      }
+    }
+
+    // --- QUOTE ROTATION ---
+    function nextQuote() {
+      quoteText.classList.add('opacity-0');
+      quoteAuthor.classList.add('opacity-0');
+
+      setTimeout(() => {
+        state.currentQuoteIdx = (state.currentQuoteIdx + 1) % coffeeQuotes.length;
+        const q = coffeeQuotes[state.currentQuoteIdx];
+        quoteText.innerText = `"${q.quote}"`;
+        quoteAuthor.innerText = q.author;
+
+        quoteText.classList.remove('opacity-0');
+        quoteAuthor.classList.remove('opacity-0');
+      }, 400);
+    }
+
+    // --- MODAL HANDLERS ---
+    function openCustomizeModal() {
+      inputHerName.value = state.herName === 'My Crush' ? '' : state.herName;
+      inputSecretNote.value = state.secretNote;
+
+      customizeModal.classList.remove('opacity-0', 'pointer-events-none');
+      customizeModalContent.classList.remove('scale-95');
+      customizeModalContent.classList.add('scale-100');
+    }
+
+    function closeCustomizeModal() {
+      customizeModal.classList.add('opacity-0', 'pointer-events-none');
+      customizeModalContent.classList.remove('scale-100');
+      customizeModalContent.classList.add('scale-95');
+    }
+
+    function saveCustomization() {
+      const nameVal = inputHerName.value.trim();
+      const noteVal = inputSecretNote.value.trim();
+
+      if (nameVal) {
+        state.herName = nameVal;
+        displayHerName.innerText = nameVal;
+        navHerName.innerText = nameVal;
+        footerHerName.innerText = nameVal;
+      }
+
+      if (noteVal) {
+        state.secretNote = noteVal;
+        secretModalText.innerText = `"${noteVal}"`;
+      }
+
+      closeCustomizeModal();
+    }
+
+    function openNoteModal() {
+      secretModalText.innerText = `"${state.secretNote}"`;
+      noteModal.classList.remove('opacity-0', 'pointer-events-none');
+      noteModalContent.classList.remove('scale-95');
+      noteModalContent.classList.add('scale-100');
+    }
+
+    function closeNoteModal() {
+      noteModal.classList.add('opacity-0', 'pointer-events-none');
+      noteModalContent.classList.remove('scale-100');
+      noteModalContent.classList.add('scale-95');
+    }
+
+    // --- EVENT LISTENERS ---
+    function setupEventListeners() {
+      brewBtn.addEventListener('click', startBrewing);
+      document.getElementById('next-quote-btn').addEventListener('click', nextQuote);
+      document.getElementById('sound-btn').addEventListener('click', toggleSound);
+
+      // Customization
+      document.getElementById('customize-btn').addEventListener('click', openCustomizeModal);
+      document.getElementById('close-customize-modal').addEventListener('click', closeCustomizeModal);
+      document.getElementById('save-customize-btn').addEventListener('click', saveCustomization);
+
+      // Secret Note
+      secretNoteBtn.addEventListener('click', openNoteModal);
+      document.getElementById('close-note-modal').addEventListener('click', closeNoteModal);
+
+      // Cup Tap interaction
+      document.getElementById('cup-container').addEventListener('click', () => {
+        if (!state.isBrewing && state.fillLevel > 0) {
+          openNoteModal();
+        } else if (!state.isBrewing) {
+          startBrewing();
+        }
+      });
+    }
+  </script>
+</body>
+</html>
